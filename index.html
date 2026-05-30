@@ -87,11 +87,86 @@
     .online {
         color: #00ff99;
     }
+
+    /* =========================
+       HISTORY / STATS SECTION
+       ========================= */
+
+    .history-card {
+        margin-top: 25px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+    }
+
+    .history-card h2,
+    .history-card h3 {
+        margin-bottom: 20px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(150px,1fr));
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+
+    .stat {
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 15px;
+    }
+
+    .stat-title {
+        font-size: 0.9rem;
+        color: #aaa;
+    }
+
+    .stat-value {
+        font-size: 1.4rem;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+
+    .status-online {
+        color: #00ff99;
+    }
+
+    .status-offline {
+        color: #ff5c5c;
+    }
+
+    .last-outage {
+        margin-bottom: 30px;
+    }
+
+    #historyTable {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    #historyTable th,
+    #historyTable td {
+        padding: 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    #historyTable th {
+        color: #4fd1ff;
+    }
+
+    #historyTable td {
+        color: #d6d6d6;
+    }
 </style>
 </head>
+
 <body>
 
 <div class="container">
+
     <div class="status-card">
 
         <h1>⚠ Sorry!</h1>
@@ -102,9 +177,7 @@
             is currently down.
         </p>
 
-        <div class="countdown" id="countdown">
-            Calculating...
-        </div>
+        <div class="countdown" id="countdown">Calculating...</div>
 
         <div class="progress-container">
             <div class="progress-bar" id="progressBar"></div>
@@ -117,83 +190,117 @@
         </div>
 
     </div>
+
+    <!-- =========================
+         NEW STATS SECTION
+         ========================= -->
+    <div class="history-card">
+
+        <h2>📊 Server Statistics</h2>
+
+        <div class="stats-grid">
+
+            <div class="stat">
+                <div class="stat-title">Status</div>
+                <div class="stat-value" id="serverStatus">Loading...</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">30 Day Uptime</div>
+                <div class="stat-value" id="uptimePercent">--</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Outages</div>
+                <div class="stat-value" id="outageCount">--</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-title">Downtime</div>
+                <div class="stat-value" id="downtimeHours">--</div>
+            </div>
+
+        </div>
+
+        <div class="last-outage">
+            <h3>Last Recorded Outage</h3>
+            <div id="lastOutage">No outage history yet.</div>
+        </div>
+
+        <div class="history-section">
+            <h3>Outage History</h3>
+
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Started</th>
+                        <th>Ended</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+
+                <tbody id="historyBody">
+                    <tr>
+                        <td colspan="3">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+    </div>
+
 </div>
 
 <script>
-/* ==========================================
-   CONFIGURATION
-   ========================================== */
+
+/* =========================
+   GLOBALS
+   ========================= */
 
 let downtimeStarted;
 let expectedBackOnline;
+let configData = {};
+
+
+/* =========================
+   LOAD CONFIG (UPDATED)
+   ========================= */
 
 async function loadConfig() {
-
-    console.log("Loading config...");
 
     try {
 
         const response = await fetch("/config");
+        const config = await response.json();
 
-        console.log("Response status:", response.status);
+        console.log("Loaded config:", config);
 
-        const rawText = await response.text();
+        configData = config;
 
-        console.log("Raw response:", rawText);
+        downtimeStarted = config.downtimeStarted
+            ? new Date(config.downtimeStarted)
+            : null;
 
-        const config = JSON.parse(rawText);
+        expectedBackOnline = config.expectedBackOnline
+            ? new Date(config.expectedBackOnline)
+            : null;
 
-        console.log("Parsed config:", config);
-
-        console.log("downtimeStarted:", config.downtimeStarted);
-        console.log("expectedBackOnline:", config.expectedBackOnline);
-
-        downtimeStarted =
-            new Date(config.downtimeStarted);
-
-        expectedBackOnline =
-            new Date(config.expectedBackOnline);
-
-        console.log(
-            "Parsed downtimeStarted:",
-            downtimeStarted
-        );
-
-        console.log(
-            "Parsed expectedBackOnline:",
-            expectedBackOnline
-        );
-
-        console.log(
-            "downtimeStarted valid?",
-            !isNaN(downtimeStarted.getTime())
-        );
-
-        console.log(
-            "expectedBackOnline valid?",
-            !isNaN(expectedBackOnline.getTime())
-        );
-
+        renderStatistics();
         updateStatus();
 
-        setInterval(updateStatus, 1000);
-
     } catch (err) {
-
-        console.error(
-            "Failed to load config:",
-            err
-        );
-
+        console.error("Config load failed:", err);
     }
 }
 
 loadConfig();
+setInterval(loadConfig, 30000);
 
 
-/* ==========================================
-   FUN STATUS MESSAGES
-   ========================================== */
+/* =========================
+   FUN MESSAGES
+   ========================= */
 
 const messages = [
     "Deploying emergency coffee to the servers...",
@@ -217,46 +324,96 @@ setInterval(() => {
 }, 5000);
 
 
-/* ==========================================
-   COUNTDOWN + PROGRESS BAR
-   ========================================== */
+/* =========================
+   STATS RENDER
+   ========================= */
+
+function renderStatistics() {
+
+    if (!configData) return;
+
+    const stats = configData.stats || {};
+    const history = configData.history || [];
+    const online = configData.online;
+
+    document.getElementById("serverStatus").innerHTML =
+        online
+            ? '<span class="status-online">🟢 Online</span>'
+            : '<span class="status-offline">🔴 Offline</span>';
+
+    document.getElementById("uptimePercent").textContent =
+        `${stats.uptime30DayPercent || 0}%`;
+
+    document.getElementById("outageCount").textContent =
+        stats.outageCount || 0;
+
+    document.getElementById("downtimeHours").textContent =
+        `${stats.totalDowntimeHours || 0}h`;
+
+    if (history.length > 0) {
+
+        const last = history[0];
+
+        document.getElementById("lastOutage").innerHTML = `
+            <strong>Started:</strong> ${new Date(last.started).toLocaleString()}<br>
+            <strong>Ended:</strong> ${new Date(last.ended).toLocaleString()}<br>
+            <strong>Duration:</strong> ${last.durationHours}h
+        `;
+    }
+
+    const tbody = document.getElementById("historyBody");
+    tbody.innerHTML = "";
+
+    if (history.length === 0) {
+        tbody.innerHTML =
+            `<tr><td colspan="3">No outages recorded.</td></tr>`;
+        return;
+    }
+
+    history.forEach(outage => {
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${new Date(outage.started).toLocaleString()}</td>
+            <td>${new Date(outage.ended).toLocaleString()}</td>
+            <td>${outage.durationHours}h</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+
+
+/* =========================
+   STATUS UPDATE (UPDATED)
+   ========================= */
 
 function updateStatus() {
-    console.log("updateStatus running");
 
-    console.log("downtimeStarted =", downtimeStarted);
-    console.log("expectedBackOnline =", expectedBackOnline);
+    if (configData.online) {
 
-    // Ensure dates are loaded
-    if (!downtimeStarted || !expectedBackOnline) {
-        console.error("Dates have not loaded yet.");
+        document.getElementById("countdown").innerHTML =
+            '<span class="online">🟢 Server Online</span>';
+
+        document.getElementById("progressBar").style.width = "100%";
+
+        document.getElementById("eta").textContent =
+            "All systems operational.";
+
         return;
     }
 
-    // Ensure dates are valid
-    if (
-        isNaN(downtimeStarted.getTime()) ||
-        isNaN(expectedBackOnline.getTime())
-    ) {
-        console.error("Invalid date detected");
-        return;
-    }
+    if (!downtimeStarted || !expectedBackOnline) return;
 
     const now = new Date();
 
-    console.log("Current time:", now);
+    const totalDuration = expectedBackOnline - downtimeStarted;
+    const elapsed = now - downtimeStarted;
+    const remaining = expectedBackOnline - now;
 
-    const totalDuration =
-        expectedBackOnline - downtimeStarted;
-
-    const elapsed =
-        now - downtimeStarted;
-
-    const remaining =
-        expectedBackOnline - now;
-
-    // Downtime period has ended
     if (remaining <= 0) {
+
         document.getElementById("countdown").innerHTML =
             '<span class="online">🟢 Expected uptime window reached!</span>';
 
@@ -268,39 +425,27 @@ function updateStatus() {
         return;
     }
 
-    const days =
-        Math.floor(remaining / (1000 * 60 * 60 * 24));
-
-    const hours =
-        Math.floor((remaining / (1000 * 60 * 60)) % 24);
-
-    const minutes =
-        Math.floor((remaining / (1000 * 60)) % 60);
-
-    const seconds =
-        Math.floor((remaining / 1000) % 60);
+    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((remaining / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((remaining / (1000 * 60)) % 60);
+    const seconds = Math.floor((remaining / 1000) % 60);
 
     document.getElementById("countdown").textContent =
         `${days}d ${hours}h ${minutes}m ${seconds}s`;
 
-    let progress =
-        (elapsed / totalDuration) * 100;
-
+    let progress = (elapsed / totalDuration) * 100;
     progress = Math.max(0, Math.min(100, progress));
 
     document.getElementById("progressBar").style.width =
         progress + "%";
 
     document.getElementById("eta").textContent =
-        "Estimated return: " +
-        expectedBackOnline.toLocaleString();
-
-    console.log(`Remaining: ${days}d ${hours}h ${minutes}m ${seconds}s`);
-    console.log(`Progress: ${progress.toFixed(2)}%`);
+        "Estimated return: " + expectedBackOnline.toLocaleString();
 }
 
 updateStatus();
 setInterval(updateStatus, 1000);
+
 </script>
 
 </body>
