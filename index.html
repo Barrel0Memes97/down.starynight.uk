@@ -169,14 +169,6 @@
 
     <div class="status-card">
 
-        <h1>⚠ Sorry!</h1>
-
-        <p>
-            <strong>Starynight Server</strong><br>
-            (The server that you are trying to reach)<br>
-            is currently down.
-        </p>
-
         <div class="countdown" id="countdown">Calculating...</div>
 
         <div class="progress-container">
@@ -335,6 +327,31 @@ function renderStatistics() {
     const stats = configData.stats || {};
     const history = configData.history || [];
     const online = configData.online;
+
+    if (online) {
+
+    document.getElementById("mainTitle").textContent =
+        "Online : )";
+
+    document.getElementById("mainMessage").innerHTML =
+        `
+        <strong>Starynight Server</strong><br>
+        (The server that you are trying to reach)<br>
+        is currently online.
+        `;
+
+    } else {
+
+    document.getElementById("mainTitle").textContent =
+        "⚠ Sorry!";
+
+    document.getElementById("mainMessage").innerHTML =
+        `
+        <strong>Starynight Server</strong><br>
+        (The server that you are trying to reach)<br>
+        is currently down.
+        `;
+    }
 
     document.getElementById("serverStatus").innerHTML =
         online
