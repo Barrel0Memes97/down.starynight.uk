@@ -336,6 +336,31 @@ function renderStatistics() {
     const history = configData.history || [];
     const online = configData.online;
 
+    if (online) {
+
+        document.getElementById("mainTitle").textContent =
+            "Online : )";
+
+        document.getElementById("mainMessage").innerHTML =
+            `
+            <strong>Starynight Server</strong><br>
+            (The server that you are trying to reach)<br>
+            is currently online. Thankfully . . . 
+            `;
+
+    } else {
+
+        document.getElementById("mainTitle").textContent =
+            "⚠ Sorry!";
+
+        document.getElementById("mainMessage").innerHTML =
+            `
+            <strong>Starynight Server</strong><br>
+            (The server that you are trying to reach)<br>
+            is currently down.
+            `;
+    }
+
     document.getElementById("serverStatus").innerHTML =
         online
             ? '<span class="status-online">🟢 Online</span>'
