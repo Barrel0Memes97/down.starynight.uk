@@ -162,11 +162,9 @@
     }
 </style>
 </head>
-
-    <div class="status-card">
         
         <h1 id="mainTitle">⚠ Sorry!</h1>
-            
+
         <p id="mainMessage">
             <strong>Starynight Server</strong><br>
             (The server that you are trying to reach)<br>
@@ -304,18 +302,15 @@ setInterval(loadConfig, 30000);
    FUN MESSAGES
    ========================= */
 
-const messages = [
-    "Deploying emergency coffee to the servers...",
-    "Convincing the hamsters to run faster...",
-    "Rebooting the flux capacitor...",
-    "Polishing the database...",
-    "Charging the backup unicorn...",
-    "Removing mysterious rubber ducks...",
-    "Reticulating splines...",
-    "Untangling network cables...",
-    "Downloading more RAM...",
-    "Testing warp drive stability..."
-];
+let messages = [];
+
+fetch('messages.txt')
+  .then(response => response.text())
+  .then(text => {
+    messages = text.split('\n').filter(line => line.trim() !== '');
+    console.log(messages); // now it's your array
+  })
+  .catch(error => console.error('Error loading messages:', error));
 
 let messageIndex = 0;
 
