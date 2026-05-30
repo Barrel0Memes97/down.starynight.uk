@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Starynight Server Status</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", sans-serif;
+    }
+
+    body {
+        background: linear-gradient(135deg, #0b1020, #151f3a);
+        color: white;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 800px;
+    }
+
+    h1 {
+        font-size: 3rem;
+        margin-bottom: 20px;
+        color: #ff5c5c;
+    }
+
+    p {
+        font-size: 1.2rem;
+        color: #d6d6d6;
+        margin-bottom: 20px;
+    }
+
+    .status-card {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+    }
+
+    .countdown {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 20px 0;
+        color: #4fd1ff;
+    }
+
+    .progress-container {
+        width: 100%;
+        height: 30px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 30px;
+        overflow: hidden;
+        margin-top: 20px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #00d4ff, #00ff99);
+        transition: width 1s linear;
+    }
+
+    .fun-status {
+        margin-top: 25px;
+        font-size: 1.1rem;
+        color: #ffd166;
+        min-height: 30px;
+    }
+
+    .eta {
+        margin-top: 15px;
+        color: #a5b4fc;
+    }
+
+    .online {
+        color: #00ff99;
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="status-card">
+
+        <h1>⚠ Sorry!</h1>
+
+        <p>
+            <strong>Starynight Server</strong><br>
+            (The server that you are trying to reach)<br>
+            is currently down.
+        </p>
+
+        <div class="countdown" id="countdown">
+            Calculating...
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div class="eta" id="eta"></div>
+
+        <div class="fun-status" id="funStatus">
+            Deploying emergency coffee to the servers...
+        </div>
+
+    </div>
+</div>
+
+<script>
+/* ==========================================
+   CONFIGURATION
+   ========================================== */
+
+let downtimeStarted;
+let expectedBackOnline;
+
+async function loadConfig() {
+
+    console.log("Loading config...");
+
+    try {
+
+        const response = await fetch("/config");
+
+        console.log("Response status:", response.status);
+
+        const rawText = await response.text();
+
+        console.log("Raw response:", rawText);
+
+        const config = JSON.parse(rawText);
+
+        console.log("Parsed config:", config);
+
+        console.log("downtimeStarted:", config.downtimeStarted);
+        console.log("expectedBackOnline:", config.expectedBackOnline);
+
+        downtimeStarted =
+            new Date(config.downtimeStarted);
+
+        expectedBackOnline =
+            new Date(config.expectedBackOnline);
+
+        console.log(
+            "Parsed downtimeStarted:",
+            downtimeStarted
+        );
+
+        console.log(
+            "Parsed expectedBackOnline:",
+            expectedBackOnline
+        );
+
+        console.log(
+            "downtimeStarted valid?",
+            !isNaN(downtimeStarted.getTime())
+        );
+
+        console.log(
+            "expectedBackOnline valid?",
+            !isNaN(expectedBackOnline.getTime())
+        );
+
+        updateStatus();
+
+        setInterval(updateStatus, 1000);
+
+    } catch (err) {
+
+        console.error(
+            "Failed to load config:",
+            err
+        );
+
+    }
+}
+
+loadConfig();
+
+
+/* ==========================================
+   FUN STATUS MESSAGES
+   ========================================== */
+
+const messages = [
+    "Deploying emergency coffee to the servers...",
+    "Convincing the hamsters to run faster...",
+    "Rebooting the flux capacitor...",
+    "Polishing the database...",
+    "Charging the backup unicorn...",
+    "Removing mysterious rubber ducks...",
+    "Reticulating splines...",
+    "Untangling network cables...",
+    "Downloading more RAM...",
+    "Testing warp drive stability..."
+];
+
+let messageIndex = 0;
+
+setInterval(() => {
+    messageIndex = (messageIndex + 1) % messages.length;
+    document.getElementById("funStatus").textContent =
+        messages[messageIndex];
+}, 5000);
+
+
+/* ==========================================
+   COUNTDOWN + PROGRESS BAR
+   ========================================== */
+
+function updateStatus() {
+    console.log("updateStatus running");
+
+    console.log("downtimeStarted =", downtimeStarted);
+    console.log("expectedBackOnline =", expectedBackOnline);
+
+    // Ensure dates are loaded
+    if (!downtimeStarted || !expectedBackOnline) {
+        console.error("Dates have not loaded yet.");
+        return;
+    }
+
+    // Ensure dates are valid
+    if (
+        isNaN(downtimeStarted.getTime()) ||
+        isNaN(expectedBackOnline.getTime())
+    ) {
+        console.error("Invalid date detected");
+        return;
+    }
+
+    const now = new Date();
+
+    console.log("Current time:", now);
+
+    const totalDuration =
+        expectedBackOnline - downtimeStarted;
+
+    const elapsed =
+        now - downtimeStarted;
+
+    const remaining =
+        expectedBackOnline - now;
+
+    // Downtime period has ended
+    if (remaining <= 0) {
+        document.getElementById("countdown").innerHTML =
+            '<span class="online">🟢 Expected uptime window reached!</span>';
+
+        document.getElementById("progressBar").style.width = "100%";
+
+        document.getElementById("eta").textContent =
+            "The estimated recovery time has been reached.";
+
+        return;
+    }
+
+    const days =
+        Math.floor(remaining / (1000 * 60 * 60 * 24));
+
+    const hours =
+        Math.floor((remaining / (1000 * 60 * 60)) % 24);
+
+    const minutes =
+        Math.floor((remaining / (1000 * 60)) % 60);
+
+    const seconds =
+        Math.floor((remaining / 1000) % 60);
+
+    document.getElementById("countdown").textContent =
+        `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+    let progress =
+        (elapsed / totalDuration) * 100;
+
+    progress = Math.max(0, Math.min(100, progress));
+
+    document.getElementById("progressBar").style.width =
+        progress + "%";
+
+    document.getElementById("eta").textContent =
+        "Estimated return: " +
+        expectedBackOnline.toLocaleString();
+
+    console.log(`Remaining: ${days}d ${hours}h ${minutes}m ${seconds}s`);
+    console.log(`Progress: ${progress.toFixed(2)}%`);
+}
+
+updateStatus();
+setInterval(updateStatus, 1000);
+</script>
+
+</body>
+</html>
