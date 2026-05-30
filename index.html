@@ -336,29 +336,26 @@ function renderStatistics() {
     const history = configData.history || [];
     const online = configData.online;
 
-    if (online) {
+    const titleEl = document.getElementById("mainTitle");
+    const msgEl = document.getElementById("mainMessage");
 
-        document.getElementById("mainTitle").textContent =
-            "Online : )";
+    if (titleEl && msgEl) {
 
-        document.getElementById("mainMessage").innerHTML =
-            `
-            <strong>Starynight Server</strong><br>
-            (The server that you are trying to reach)<br>
-            is currently online. Thankfully . . . 
+        if (online) {
+            titleEl.textContent = "Online : )";
+            msgEl.innerHTML = `
+                <strong>Starynight Server</strong><br>
+                (The server that you are trying to reach)<br>
+                is currently online. Thankfully . . .
             `;
-
-    } else {
-
-        document.getElementById("mainTitle").textContent =
-            "⚠ Sorry!";
-
-        document.getElementById("mainMessage").innerHTML =
-            `
-            <strong>Starynight Server</strong><br>
-            (The server that you are trying to reach)<br>
-            is currently down.
+        } else {
+            titleEl.textContent = "⚠ Sorry!";
+            msgEl.innerHTML = `
+                <strong>Starynight Server</strong><br>
+                (The server that you are trying to reach)<br>
+                is currently down.
             `;
+        }
     }
 
     document.getElementById("serverStatus").innerHTML =
