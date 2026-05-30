@@ -197,6 +197,7 @@ const stats = {
 
 };
 
+
 console.log("History entries:",
     history.length);
 
